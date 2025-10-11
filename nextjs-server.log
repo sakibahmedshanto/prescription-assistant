@@ -1,0 +1,100 @@
+
+> prescription-assistant@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.5.4 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.214:3000
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 617ms
+ ○ Compiling / ...
+ ✓ Compiled / in 968ms
+ GET / 200 in 1136ms
+ ✓ Compiled /favicon.ico in 95ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 337ms
+ GET / 200 in 73ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 232ms
+ ✓ Compiled /_not-found/page in 106ms
+ POST /api/transcribe 404 in 158ms
+ GET / 200 in 173ms
+ GET / 200 in 59ms
+   Reload env: .env
+ GET / 200 in 37ms
+ ✓ Compiled in 32ms
+ GET / 200 in 103ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 265ms
+ GET / 200 in 57ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 225ms
+ GET / 200 in 58ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 228ms
+ ○ Compiling /api/transcribe ...
+ ✓ Compiled /api/transcribe in 573ms
+Transcription error: [Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.]
+ POST /api/transcribe 500 in 1058ms
+ GET / 200 in 65ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 228ms
+ GET / 200 in 40ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 225ms
+Transcription error: [Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.]
+ POST /api/transcribe 500 in 258ms
+ GET / 200 in 68ms
+ GET / 200 in 23ms
+ ✓ Compiled in 15ms
+   Reload env: .env
+ GET / 200 in 73ms
+ ✓ Compiled in 15ms
+ ✓ Compiled in 23ms
+ GET / 200 in 165ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 260ms
+ ✓ Compiled /api/transcribe-assemblyai in 115ms
+AssemblyAI transcription error: Error: ASSEMBLYAI_API_KEY environment variable is required
+    at getAssemblyAIHeaders (app/api/transcribe-assemblyai/route.ts:11:11)
+    at POST (app/api/transcribe-assemblyai/route.ts:50:28)
+   9 |   const apiKey = process.env.ASSEMBLYAI_API_KEY;
+  10 |   if (!apiKey) {
+> 11 |     throw new Error('ASSEMBLYAI_API_KEY environment variable is required');
+     |           ^
+  12 |   }
+  13 |   return {
+  14 |     authorization: apiKey,
+ POST /api/transcribe-assemblyai 500 in 431ms
+ GET / 200 in 73ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 247ms
+ GET / 200 in 70ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 238ms
+ GET / 200 in 68ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 233ms
+AssemblyAI transcription error: Error: ASSEMBLYAI_API_KEY environment variable is required
+    at getAssemblyAIHeaders (app/api/transcribe-assemblyai/route.ts:11:11)
+    at POST (app/api/transcribe-assemblyai/route.ts:50:28)
+   9 |   const apiKey = process.env.ASSEMBLYAI_API_KEY;
+  10 |   if (!apiKey) {
+> 11 |     throw new Error('ASSEMBLYAI_API_KEY environment variable is required');
+     |           ^
+  12 |   }
+  13 |   return {
+  14 |     authorization: apiKey,
+ POST /api/transcribe-assemblyai 500 in 302ms
+   Reload env: .env
+ GET / 200 in 69ms
+ GET / 200 in 126ms
+ GET /favicon.ico?favicon.0b3bf435.ico 200 in 267ms
+Speaker B -> Doctor (Score: 5.77)
+  - Utterances: 1, Words: 3
+  - Questions: 1, Medical Terms: 0
+  - Commands: 0, First: false
+Speaker A -> Patient (Score: 2.73)
+  - Utterances: 1, Words: 1
+  - Questions: 0, Medical Terms: 0
+  - Commands: 0, First: true
+ POST /api/transcribe-assemblyai 200 in 7001ms
+ ✓ Compiled in 34ms
+ GET / 200 in 90ms
+ GET / 200 in 43ms
+ ✓ Compiled in 20ms
+ ✓ Compiled in 28ms
+ ✓ Compiled in 26ms
+ ✓ Compiled in 84ms
+ ✓ Compiled in 53ms

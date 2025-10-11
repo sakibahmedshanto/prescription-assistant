@@ -1,0 +1,8 @@
+2025-10-10 19:24:16,656 - __main__ - INFO - Starting WhisperX WebSocket server on localhost:8080
+2025-10-10 19:24:16,656 - __main__ - INFO - Server will initialize models on first transcription request
+2025-10-10 19:24:16,669 - websockets.server - INFO - server listening on [::1]:8080
+2025-10-10 19:24:16,669 - websockets.server - INFO - server listening on 127.0.0.1:8080
+2025-10-10 19:24:16,669 - __main__ - INFO - ✓ Server running on ws://localhost:8080
+2025-10-10 19:24:16,669 - __main__ - INFO -   Waiting for connections...
+2025-10-10 19:24:50,728 - websockets.server - INFO - connection open
+2025-10-10 19:24:50,728 - __main__ - INFO - Client connected: ::1:64495
