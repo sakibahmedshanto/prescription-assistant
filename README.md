@@ -48,6 +48,17 @@ http://localhost:3000
 - **Prescription recommendations** - medication suggestions
 - **Follow-up instructions** - next steps for patient care
 
+### **💊 Bangladesh Medicine Database (NEW!)**
+- **21,714+ medicines** from Bangladesh pharmaceutical companies
+- **AUTOMATIC suggestions** - activates after diagnosis generation
+- **Visual badge indicator** - shows medicine count with animation
+- **Smart medicine matching** based on AI analysis
+- **240 manufacturers** (Square, Beximco, Incepta, ACME, etc.)
+- **Detailed information** - brand names, generics, strengths, prices, dosage forms
+- **Three-tier display** - Conditions → Generics → BD Brands
+- **Search by generic** or **medical condition**
+- **Drug class & indication** details for informed prescribing
+
 ### **🔄 Real-Time Features**
 - **Live transcription** as you speak
 - **Speaker detection** automatically identifies Doctor vs Patient
@@ -109,21 +120,33 @@ prescription-assistant/
 ├── app/
 │   ├── api/
 │   │   ├── transcribe-assemblyai/   # AssemblyAI transcription endpoint
-│   │   └── analyze/                 # OpenAI analysis endpoint
+│   │   ├── analyze/                 # OpenAI analysis endpoint
+│   │   └── medicine-search/         # 💊 Medicine search API
 │   ├── components/
 │   │   ├── TranscriptionDisplay.tsx # Show transcriptions
-│   │   ├── MedicalAnalysis.tsx      # Show AI analysis
+│   │   ├── MedicalAnalysis.tsx      # Show AI analysis + medicines
 │   │   ├── RecordingControls.tsx    # Recording UI
 │   │   └── VoiceTraining.tsx        # Voice calibration
 │   ├── hooks/
 │   │   ├── useAudioRecorder.ts      # Audio recording logic
 │   │   └── useAssemblyAITranscription.ts # Real-time transcription
+│   ├── lib/
+│   │   └── medicineDatabase.ts      # 💊 Medicine database utilities
 │   ├── types/
 │   │   └── index.ts                 # TypeScript types
 │   └── page.tsx                     # Main application page
+├── Dataset/                         # 💊 BD Medicine Database
+│   └── archive/
+│       ├── medicine.csv             # 21,714 medicines
+│       ├── generic.csv              # 19,565 generics
+│       ├── manufacturer.csv         # 240 manufacturers
+│       ├── indication.csv           # 2,043 indications
+│       └── drug class.csv           # 453 drug classes
 ├── websocket-server-assemblyai-rest.js # Real-time WebSocket server
 ├── .env                             # Environment variables (API keys)
 ├── SETUP_ASSEMBLYAI.md             # Detailed setup guide
+├── MEDICINE_SUGGESTION_GUIDE.md    # 💊 Medicine feature guide
+├── test-medicine-db.js             # 💊 Database verification script
 └── README.md                        # This file
 ```
 
@@ -182,7 +205,25 @@ NODE_ENV=development
 4. **Click "Stop Recording"**: End consultation (wait 10-30 seconds)
 5. **View transcription**: See Doctor/Patient segments with high accuracy
 6. **Click "Generate Analysis"**: Get AI-powered medical insights
-7. **Export data**: Download complete transcription and analysis
+7. **💊 NEW: Click "BD Medicine Suggestions"**: Get Bangladesh medicine recommendations
+8. **Export data**: Download complete transcription and analysis
+
+### **Medicine Suggestion Workflow**
+
+1. **Record** a doctor-patient conversation with symptoms and diagnosis
+2. **Click** the "BD Medicine Suggestions" tab in Medical Analysis panel
+3. **Generate** - AI analyzes conversation to extract:
+   - Medical conditions diagnosed
+   - Generic medicines needed
+   - Dosage and duration recommendations
+4. **Review** matched Bangladesh medicines with:
+   - Brand names available in BD market
+   - Manufacturers and pricing
+   - Strengths and dosage forms
+   - Drug classes and indications
+5. **Select** appropriate medicines based on patient needs and budget
+
+**See detailed guide:** [MEDICINE_SUGGESTION_GUIDE.md](./MEDICINE_SUGGESTION_GUIDE.md)
 
 ### **Best Practices**
 

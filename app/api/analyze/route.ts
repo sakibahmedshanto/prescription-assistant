@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import {
+  searchMedicinesCombined,
+  getTopMedicines,
+} from '@/app/lib/medicineDatabase';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -143,60 +147,259 @@ ${conversation}
 Use evidence-based medicine principles and cite reasoning for each diagnosis when possible.`;
         break;
 
-      case 'prescription':
-        systemPrompt = `You are an expert clinical pharmacologist and medical AI assistant specializing in medication therapy. 
-Your task is to provide evidence-based medication recommendations based on the patient's condition, 
-following current clinical guidelines and considering safety, efficacy, and patient-specific factors.`;
-        userPrompt = `Based on the following doctor-patient conversation, provide comprehensive prescription recommendations:
+      case 'prescription_with_medicines':
+        // This case uses structured output to get medicine recommendations
+        // Then searches Bangladesh medicine database for available options
+        try {
+          const structuredCompletion = await openai.chat.completions.create({
+            model: 'gpt-4-turbo-preview',
+            messages: [
+              {
+                role: 'system',
+                content: `You are an expert medical AI assistant. Analyze the conversation and extract:
+1. Medical conditions/diagnoses mentioned
+2. Generic medicine names that should be prescribed
+3. Dosage and duration recommendations
 
-**MEDICATION RECOMMENDATIONS:**
-For each medication provide:
-1. Generic name (Brand name)
-2. Indication/Reason for prescribing
-3. Dosage (with route and frequency)
-4. Duration of treatment
-5. Instructions (with/without food, time of day, etc.)
+Respond ONLY with valid JSON in this exact format:
+{
+  "conditions": ["condition1", "condition2"],
+  "medicines": [
+    {
+      "genericName": "medicine name",
+      "indication": "reason for prescribing",
+      "dosage": "dosage details",
+      "duration": "treatment duration",
+      "instructions": "special instructions"
+    }
+  ],
+  "nonPharmacological": ["lifestyle advice", "dietary recommendations"],
+  "safetyNotes": ["allergy checks", "contraindications to verify"]
+}`
+              },
+              {
+                role: 'user',
+                content: `Analyze this doctor-patient conversation and extract medical information:\n\n${conversation}`
+              }
+            ],
+            temperature: 0.3,
+            max_tokens: 1500,
+            response_format: { type: "json_object" }
+          });
 
-**PATIENT COUNSELING POINTS:**
-- How to take the medication correctly
-- Expected therapeutic effects (when they should feel better)
-- Common side effects to expect
-- Serious side effects requiring immediate medical attention
-- What to do if a dose is missed
+          const structuredData = JSON.parse(
+            structuredCompletion.choices[0]?.message?.content || '{}'
+          );
 
-**SAFETY CONSIDERATIONS:**
-- Contraindications to check (based on conversation)
-- Potential drug-drug interactions
-- Drug-disease interactions
-- Special populations (pregnancy, breastfeeding, elderly, renal/hepatic impairment)
-- Allergy considerations
+          // Extract generic names and conditions for medicine search
+          const genericNames = structuredData.medicines?.map((m: any) => m.genericName) || [];
+          const conditions = structuredData.conditions || [];
 
-**MONITORING PARAMETERS:**
-- Clinical response to monitor
-- Laboratory monitoring if needed
-- Follow-up timeline
+          // Search Bangladesh medicine database
+          const medicineResults = searchMedicinesCombined(genericNames, conditions);
+          const topMedicines = getTopMedicines(medicineResults, 15);
+
+          // Format the response with both GPT analysis and BD medicines
+          const formattedAnalysis = `
+**MEDICAL ANALYSIS:**
+
+**Conditions Identified:**
+${conditions.map((c: string) => `- ${c}`).join('\n')}
+
+**RECOMMENDED MEDICATIONS:**
+${structuredData.medicines?.map((m: any, idx: number) => `
+${idx + 1}. **${m.genericName}**
+   - Indication: ${m.indication}
+   - Dosage: ${m.dosage}
+   - Duration: ${m.duration}
+   - Instructions: ${m.instructions}
+`).join('\n')}
 
 **NON-PHARMACOLOGICAL RECOMMENDATIONS:**
-- Lifestyle modifications
-- Dietary advice
-- Activity restrictions or recommendations
+${structuredData.nonPharmacological?.map((np: string) => `- ${np}`).join('\n')}
 
-**PRESCRIPTION FORMAT:**
-(Ready to use prescription format)
-Rx:
-[List medications in standard prescription format]
+**SAFETY CONSIDERATIONS:**
+${structuredData.safetyNotes?.map((sn: string) => `- ${sn}`).join('\n')}
 
-**IMPORTANT SAFETY DISCLAIMER:**
-- Verify patient allergies before prescribing
-- Check for contraindications and drug interactions
-- Adjust doses based on patient-specific factors
-- This is a recommendation for physician review - final prescribing decision rests with the licensed physician
+**IMPORTANT DISCLAIMER:**
+This is clinical decision support for physician review only. Final prescribing decisions must be made by licensed physicians based on complete clinical evaluation, patient allergies, and current medication review.
+          `.trim();
 
-Conversation:
-${conversation}
+          return NextResponse.json({
+            success: true,
+            analysis: formattedAnalysis,
+            analysisType: 'prescription_with_medicines',
+            structuredData,
+            bdMedicines: topMedicines,
+            usage: structuredCompletion.usage,
+          });
 
-Base recommendations on current clinical guidelines and evidence-based medicine.`;
-        break;
+        } catch (structuredError: any) {
+          console.error('Structured medicine analysis error:', structuredError);
+          return NextResponse.json(
+            { 
+              error: 'Failed to analyze for medicine recommendations', 
+              details: structuredError.message 
+            },
+            { status: 500 }
+          );
+        }
+
+      case 'suggested_medicines':
+        // Simplified medicine-only analysis for dedicated tab
+        try {
+          const simpleCompletion = await openai.chat.completions.create({
+            model: 'gpt-4-turbo-preview',
+            messages: [
+              {
+                role: 'system',
+                content: `You are a medical AI assistant. Analyze the conversation and extract ONLY:
+1. Primary medical conditions/diagnoses
+2. Generic medicine names needed for treatment
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "conditions": ["condition1", "condition2"],
+  "genericMedicines": ["medicine1", "medicine2"]
+}`
+              },
+              {
+                role: 'user',
+                content: `Analyze this conversation and extract conditions and needed medicines:\n\n${conversation}`
+              }
+            ],
+            temperature: 0.3,
+            max_tokens: 800,
+            response_format: { type: "json_object" }
+          });
+
+          const extractedData = JSON.parse(
+            simpleCompletion.choices[0]?.message?.content || '{}'
+          );
+
+          // Search BD medicine database
+          const genericNames = extractedData.genericMedicines || [];
+          const conditions = extractedData.conditions || [];
+          
+          const medicineResults = searchMedicinesCombined(genericNames, conditions);
+          const topMedicines = getTopMedicines(medicineResults, 15);
+
+          // Simple formatted output for display
+          const simpleAnalysis = `
+**Suggested Medicines for:** ${conditions.join(', ') || 'Detected conditions'}
+
+Found **${topMedicines.length} medicines** available in Bangladesh matching the treatment requirements.
+          `.trim();
+
+          return NextResponse.json({
+            success: true,
+            analysis: simpleAnalysis,
+            analysisType: 'suggested_medicines',
+            structuredData: {
+              conditions: extractedData.conditions || [],
+              medicines: (extractedData.genericMedicines || []).map((med: string) => ({
+                genericName: med,
+                indication: 'As prescribed',
+                dosage: 'As directed by physician',
+                duration: 'As directed',
+                instructions: 'Follow physician instructions'
+              })),
+              nonPharmacological: [],
+              safetyNotes: []
+            },
+            bdMedicines: topMedicines,
+            usage: simpleCompletion.usage,
+          });
+
+        } catch (simplifiedError: any) {
+          console.error('Simplified medicine analysis error:', simplifiedError);
+          return NextResponse.json(
+            { 
+              error: 'Failed to get medicine suggestions', 
+              details: simplifiedError.message 
+            },
+            { status: 500 }
+          );
+        }
+
+      case 'prescription':
+        // Prescription analysis with dosage and usage instructions
+        try {
+          const prescriptionCompletion = await openai.chat.completions.create({
+            model: 'gpt-4-turbo-preview',
+            messages: [
+              {
+                role: 'system',
+                content: `You are a medical AI assistant. Analyze the conversation and extract:
+1. Medical conditions/diagnoses mentioned
+2. Generic medicine names that should be prescribed
+3. Dosage and usage instructions for each medicine
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "conditions": ["condition1", "condition2"],
+  "medicines": [
+    {
+      "genericName": "medicine name",
+      "dosage": "specific dosage instructions",
+      "instructions": "when and how to take",
+      "duration": "treatment duration"
+    }
+  ]
+}`
+              },
+              {
+                role: 'user',
+                content: `Analyze this conversation and create a prescription with dosage instructions:\n\n${conversation}`
+              }
+            ],
+            temperature: 0.3,
+            max_tokens: 1000,
+            response_format: { type: "json_object" }
+          });
+
+          const prescriptionData = JSON.parse(
+            prescriptionCompletion.choices[0]?.message?.content || '{}'
+          );
+
+          // Search BD medicine database
+          const genericNames = prescriptionData.medicines?.map((m: any) => m.genericName) || [];
+          const conditions = prescriptionData.conditions || [];
+          
+          const medicineResults = searchMedicinesCombined(genericNames, conditions);
+          const topMedicines = getTopMedicines(medicineResults, 15);
+
+          // Prescription formatted output
+          const prescriptionAnalysis = `
+**Prescription for:** ${conditions.join(', ') || 'Detected conditions'}
+
+Found **${topMedicines.length} Bangladesh medicines** available for the prescribed generics.
+          `.trim();
+
+          return NextResponse.json({
+            success: true,
+            analysis: prescriptionAnalysis,
+            analysisType: 'prescription',
+            structuredData: {
+              conditions: prescriptionData.conditions || [],
+              medicines: prescriptionData.medicines || [],
+              nonPharmacological: [],
+              safetyNotes: []
+            },
+            bdMedicines: topMedicines,
+            usage: prescriptionCompletion.usage,
+          });
+
+        } catch (prescriptionError: any) {
+          console.error('Prescription analysis error:', prescriptionError);
+          return NextResponse.json(
+            { 
+              error: 'Failed to analyze for prescription', 
+              details: prescriptionError.message 
+            },
+            { status: 500 }
+          );
+        }
 
       case 'follow-up':
         systemPrompt = `You are an expert medical AI assistant specializing in care continuity and patient follow-up planning. 

@@ -7,6 +7,8 @@ import { MedicalAnalysis } from './components/MedicalAnalysis';
 import { RecordingControls } from './components/RecordingControls';
 import { VoiceTraining } from './components/VoiceTraining';
 import { VoiceRecognitionSetup } from './components/VoiceRecognitionSetup';
+import { ManualDialogueInput } from './components/ManualDialogueInput';
+import { ConversationJsonUpload } from './components/ConversationJsonUpload';
 import { 
   TranscriptionSegment, 
   MedicalAnalysis as MedicalAnalysisType,
@@ -184,6 +186,8 @@ export default function PrescriptionAssistant() {
           type,
           content: data.analysis,
           timestamp: new Date(),
+          structuredData: data.structuredData,
+          bdMedicines: data.bdMedicines,
         };
 
         setAnalyses((prev) => {
@@ -191,6 +195,13 @@ export default function PrescriptionAssistant() {
           updated.set(type, newAnalysis);
           return updated;
         });
+
+        // Auto-generate medicine suggestions when diagnosis is completed
+        if (type === 'diagnosis' && segments.length > 0) {
+          setTimeout(() => {
+            handleRequestAnalysis('prescription');
+          }, 500);
+        }
       }
     } catch (err: any) {
       console.error('Analysis error:', err);
@@ -206,6 +217,16 @@ export default function PrescriptionAssistant() {
       setAnalyses(new Map());
       setError(null);
     }
+  }, []);
+
+  const handleAddManualSegments = useCallback((newSegments: TranscriptionSegment[]) => {
+    setSegments((prev) => [...prev, ...newSegments]);
+  }, []);
+
+  const handleLoadJsonConversation = useCallback((newSegments: TranscriptionSegment[]) => {
+    setSegments(newSegments);
+    setAnalyses(new Map());
+    setError(null);
   }, []);
 
   const handleRetrainVoice = useCallback(() => {
@@ -318,6 +339,10 @@ export default function PrescriptionAssistant() {
 
         {/* Action Buttons */}
         <div className="mb-6 flex gap-3">
+          <ConversationJsonUpload
+            onLoadConversation={handleLoadJsonConversation}
+          />
+          
           <button
             onClick={handleExport}
             disabled={segments.length === 0}
