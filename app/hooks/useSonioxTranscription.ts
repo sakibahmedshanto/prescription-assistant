@@ -1,13 +1,15 @@
-// /hooks/useSonioxTranscription.ts
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { TranscriptionSegment } from '../types';
 
 export function useSonioxTranscription() {
   const [segments, setSegments] = useState<TranscriptionSegment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
   // Convert Blob -> base64
   const blobToBase64 = (blob: Blob) =>
@@ -23,44 +25,48 @@ export function useSonioxTranscription() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
       let chunks: BlobPart[] = [];
 
-      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      // Open WebSocket connection
+      const ws = new WebSocket(`wss://api.soniox.com/realtime?language=bn-BD`, [
+        'soniox-realtime'
+      ]);
+      wsRef.current = ws;
 
-      mediaRecorder.onstart = () => setIsRecording(true);
-
-      mediaRecorder.onstop = async () => {
-        setIsRecording(false);
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        const base64 = await blobToBase64(blob);
-
+      ws.onopen = () => setIsRecording(true);
+      ws.onmessage = (event) => {
         try {
-          const response = await fetch('/api/transcribe-soniox', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ audioContentBase64: base64 }),
-          });
-
-          const data = await response.json();
-
-          if (data.success && data.transcription) {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'transcript' && msg.text) {
             setSegments((prev) => [
               ...prev,
-              { speaker: 'Patient', text: data.transcription, timestamp: new Date() },
+              { speaker: msg.speaker || 'Patient', text: msg.text, timestamp: new Date() },
             ]);
-          } else {
-            setError(data.error || 'Transcription failed');
           }
-        } catch (err: any) {
-          console.error('Error fetching transcription:', err);
-          setError(err.message || 'Transcription API failed');
+        } catch (err) {
+          console.error('Error parsing Soniox message:', err);
         }
       };
 
-      mediaRecorder.start();
+      ws.onerror = (err) => setError('WebSocket error: ' + err);
 
-      // Example: record for 5 seconds, then stop automatically
-      setTimeout(() => mediaRecorder.stop(), 5000);
+      mediaRecorder.ondataavailable = async (e) => {
+        if (ws.readyState === WebSocket.OPEN && e.data.size > 0) {
+          const base64 = await blobToBase64(e.data);
+          ws.send(JSON.stringify({ type: 'audio', audio: base64 }));
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        setIsRecording(false);
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'EOS' }));
+          ws.close();
+        }
+      };
+
+      mediaRecorder.start(250); // chunk every 250ms
     } catch (err: any) {
       console.error('Recording error:', err);
       setError(err.message || 'Recording failed');
@@ -68,7 +74,8 @@ export function useSonioxTranscription() {
   }, []);
 
   const stopRecording = useCallback(() => {
-    setIsRecording(false);
+    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current = null;
   }, []);
 
   const clearSegments = useCallback(() => {
