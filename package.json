@@ -18,25 +18,29 @@
     "start:assemblyai-rest": "concurrently \"npm run ws:assemblyai-rest\" \"npm run start\""
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@google-cloud/speech": "^6.7.0",
+    "@mui/icons-material": "^7.3.4",
+    "@mui/material": "^7.3.4",
+    "assemblyai": "^4.0.0",
+    "axios": "^1.7.0",
+    "dotenv": "^16.4.5",
+    "lucide-react": "^0.460.0",
+    "next": "15.5.4",
+    "openai": "^4.70.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "next": "15.5.4",
-    "@google-cloud/speech": "^6.7.0",
-    "openai": "^4.70.0",
-    "lucide-react": "^0.460.0",
-    "dotenv": "^16.4.5",
-    "ws": "^8.18.0",
-    "assemblyai": "^4.0.0",
-    "axios": "^1.7.0"
+    "ws": "^8.18.0"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
+    "@types/ws": "^8.5.10",
     "concurrently": "^8.2.2",
-    "@types/ws": "^8.5.10"
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
