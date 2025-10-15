@@ -7,7 +7,6 @@
     "build": "next build --turbopack",
     "start": "concurrently \"npm run ws:soniox\" \"next start\"",
     "test:setup": "node test-setup.js",
-    "test:soniox": "node test-soniox.js",
     "ws:soniox": "node websocket-server-soniox.js"
   },
   "dependencies": {

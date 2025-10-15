@@ -278,7 +278,7 @@ class SonioxTranscriptionServer {
         currentSpeaker = speaker;
         currentSegment = {
           speaker: `Speaker ${currentSpeaker}`,
-          text: text,
+          text: text?.replace(/<end>/g, '').trim() || '',
           language: language,
           isTranslation: isTranslation,
           isFinal: token.is_final || false,
@@ -288,13 +288,13 @@ class SonioxTranscriptionServer {
       } else {
         // Add to current segment
         if (currentSegment) {
-          currentSegment.text += text;
+          currentSegment.text += text?.replace(/<end>/g, '') || '';
           currentSegment.isFinal = token.is_final || currentSegment.isFinal;
         } else {
           // Create new segment if none exists
           currentSegment = {
             speaker: speaker ? `Speaker ${speaker}` : 'Unknown',
-            text: text,
+            text: text?.replace(/<end>/g, '').trim() || '',
             language: language,
             isTranslation: isTranslation,
             isFinal: token.is_final || false,

@@ -3,10 +3,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { TranscriptionSegment } from '../types';
 
-interface UseSonioxTranscriptionReturn {
+interface UseRealTimeTranscriptionReturn {
   isConnected: boolean;
   isRecording: boolean;
-  isProcessing: boolean;
   segments: TranscriptionSegment[];
   error: string | null;
   startRecording: () => Promise<void>;
@@ -15,10 +14,9 @@ interface UseSonioxTranscriptionReturn {
   disconnect: () => void;
 }
 
-export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
+export function useRealTimeTranscription(): UseRealTimeTranscriptionReturn {
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [segments, setSegments] = useState<TranscriptionSegment[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +28,7 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
 
   // Generate unique session ID
   function generateSessionId(): string {
-    return `soniox_session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
   // Connect to WebSocket server
@@ -44,7 +42,7 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log('Soniox WebSocket connected');
+        console.log('WebSocket connected');
         setIsConnected(true);
         setError(null);
       };
@@ -59,21 +57,20 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
       };
 
       ws.onclose = () => {
-        console.log('Soniox WebSocket disconnected');
+        console.log('WebSocket disconnected');
         setIsConnected(false);
         setIsRecording(false);
-        setIsProcessing(false);
       };
 
       ws.onerror = (error) => {
-        console.error('Soniox WebSocket error:', error);
+        console.error('WebSocket error:', error);
         setError('WebSocket connection error');
         setIsConnected(false);
       };
 
       wsRef.current = ws;
     } catch (err) {
-      console.error('Error connecting to Soniox WebSocket:', err);
+      console.error('Error connecting to WebSocket:', err);
       setError('Failed to connect to transcription server');
     }
   }, []);
@@ -86,41 +83,29 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
     }
     setIsConnected(false);
     setIsRecording(false);
-    setIsProcessing(false);
   }, []);
 
   // Handle WebSocket messages
   const handleWebSocketMessage = useCallback((message: any) => {
     switch (message.type) {
       case 'connected':
-        console.log('Connected to Soniox server:', message.message);
-        break;
-
-      case 'stream_started':
-        setIsProcessing(true);
-        console.log('Soniox stream started');
+        console.log('Connected to transcription server:', message.message);
         break;
 
       case 'transcription':
-        handleTranscriptionResult(message.data, message.isFinal);
-        if (message.isFinal) {
-          setIsProcessing(false);
-        }
+        handleTranscriptionResult(message.data);
+        break;
+
+      case 'stream_started':
+        console.log('Transcription stream started');
         break;
 
       case 'stream_stopped':
-        setIsProcessing(false);
-        console.log('Soniox stream stopped');
-        break;
-
-      case 'session_finished':
-        setIsProcessing(false);
-        console.log('Soniox session finished');
+        console.log('Transcription stream stopped');
         break;
 
       case 'error':
         setError(message.message);
-        setIsProcessing(false);
         break;
 
       default:
@@ -128,29 +113,25 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
     }
   }, []);
 
-  // Handle transcription results from Soniox
-  const handleTranscriptionResult = useCallback((data: any, isFinal: boolean) => {
+  // Handle transcription results
+  const handleTranscriptionResult = useCallback((data: any) => {
     if (data.speakerSegments && data.speakerSegments.length > 0) {
       const newSegments: TranscriptionSegment[] = data.speakerSegments.map((seg: any) => ({
         speaker: seg.speaker,
-        text: seg.text?.replace(/<end>/g, '').trim() || '',
-        timestamp: new Date(seg.timestamp),
-        isFinal: seg.isFinal,
-        confidence: seg.confidence,
-        language: seg.language,
-        isTranslation: seg.isTranslation
+        text: seg.text,
+        timestamp: new Date(),
+        isFinal: seg.isFinal || false,
+        confidence: data.confidence,
       }));
 
-      if (isFinal) {
+      if (data.isFinal) {
         // Add final segments to the list
         setSegments(prev => [...prev, ...newSegments]);
       } else {
-        // Update interim results - replace the last non-final segments
+        // Update interim results (you might want to handle this differently)
         setSegments(prev => {
-          // Keep all final segments
-          const finalSegments = prev.filter(seg => seg.isFinal);
-          
-          // Add new interim segments
+          // Remove previous interim results and add new ones
+          const finalSegments = prev.filter(seg => seg.isFinal !== false);
           return [...finalSegments, ...newSegments];
         });
       }
@@ -183,7 +164,7 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
       streamRef.current = stream;
       audioChunksRef.current = [];
 
-      // Create MediaRecorder with small time slices for streaming
+      // Create MediaRecorder with small time slices for real-time streaming
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus',
       });
@@ -199,7 +180,7 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
 
       mediaRecorder.onstart = () => {
         setIsRecording(true);
-        console.log('Recording started for Soniox');
+        console.log('Recording started');
         
         // Start transcription stream
         if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -216,7 +197,7 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
 
       mediaRecorder.onstop = () => {
         setIsRecording(false);
-        console.log('Recording stopped for Soniox');
+        console.log('Recording stopped');
         
         // Stop transcription stream
         if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -299,7 +280,6 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
   return {
     isConnected,
     isRecording,
-    isProcessing,
     segments,
     error,
     startRecording,
