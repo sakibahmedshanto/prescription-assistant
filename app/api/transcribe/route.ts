@@ -30,8 +30,8 @@ export async function POST(request: NextRequest) {
     if (!process.env.GOOGLE_CLOUD_CREDENTIALS || !process.env.GOOGLE_CLOUD_PROJECT_ID) {
       return NextResponse.json(
         { 
-          error: 'Google Cloud is not configured. Please use the AssemblyAI version at /page-assemblyai instead.',
-          suggestion: 'Navigate to http://localhost:3000/page-assemblyai for superior speaker diarization with AssemblyAI.'
+          error: 'Google Cloud is not configured. Please use the Soniox version for Bengali transcription.',
+          suggestion: 'Navigate to http://localhost:3000 for Bengali transcription with Soniox.'
         },
         { status: 503 }
       );

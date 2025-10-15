@@ -1,20 +1,20 @@
 # 🏥 Prescription Assistant
 
-AI-powered medical conversation transcription and analysis system with **AssemblyAI's superior speaker diarization (95%+ accuracy)**.
+AI-powered medical conversation transcription and analysis system with **Soniox's Bengali transcription with speaker diarization**.
 
 ---
 
 ## ⚡ Quick Start (3 Minutes)
 
-### **1. Get AssemblyAI API Key**
-- Sign up: https://www.assemblyai.com/
-- Free tier: **5 hours/month**
-- Copy your API key from dashboard
+### **1. Get Soniox API Key**
+- Sign up: https://console.soniox.com/
+- Create API key for Bengali transcription
+- Copy your API key
 
 ### **2. Configure**
 ```bash
 # Open .env file and add your API key:
-ASSEMBLYAI_API_KEY=your-api-key-here
+SONIOX_API_KEY=your-api-key-here
 ```
 
 ### **3. Run**

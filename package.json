@@ -8,14 +8,11 @@
     "start": "next start",
     "test:setup": "node test-setup.js",
     "ws:server": "node websocket-server.js",
-    "ws:assemblyai": "node websocket-server-assemblyai.js",
-    "ws:assemblyai-rest": "node websocket-server-assemblyai-rest.js",
+    "ws:soniox": "node websocket-server-soniox.js",
     "dev:full": "concurrently \"npm run ws:server\" \"npm run dev\"",
-    "dev:assemblyai": "concurrently \"npm run ws:assemblyai\" \"npm run dev\"",
-    "dev:assemblyai-rest": "concurrently \"npm run ws:assemblyai-rest\" \"npm run dev\"",
+    "dev:soniox": "concurrently \"npm run ws:soniox\" \"npm run dev\"",
     "start:full": "concurrently \"npm run ws:server\" \"npm run start\"",
-    "start:assemblyai": "concurrently \"npm run ws:assemblyai\" \"npm run start\"",
-    "start:assemblyai-rest": "concurrently \"npm run ws:assemblyai-rest\" \"npm run start\""
+    "start:soniox": "concurrently \"npm run ws:soniox\" \"npm run start\""
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -23,7 +20,6 @@
     "@google-cloud/speech": "^6.7.0",
     "@mui/icons-material": "^7.3.4",
     "@mui/material": "^7.3.4",
-    "assemblyai": "^4.0.0",
     "axios": "^1.7.0",
     "dotenv": "^16.4.5",
     "lucide-react": "^0.460.0",
