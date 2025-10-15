@@ -1,45 +1,41 @@
 # 🏥 Prescription Assistant
 
-AI-powered medical conversation transcription and analysis system with **AssemblyAI's superior speaker diarization (95%+ accuracy)**.
+AI-powered medical conversation transcription and analysis system with **Soniox real-time transcription** and speaker diarization.
 
 ---
 
 ## ⚡ Quick Start (3 Minutes)
 
-### **1. Get AssemblyAI API Key**
-- Sign up: https://www.assemblyai.com/
-- Free tier: **5 hours/month**
+### **1. Get Soniox API Key**
+- Sign up: https://console.soniox.com
 - Copy your API key from dashboard
+- Free tier available
 
 ### **2. Configure**
 ```bash
-# Open .env file and add your API key:
-ASSEMBLYAI_API_KEY=your-api-key-here
+# Set your API key
+export SONIOX_API_KEY=your-api-key-here
 ```
 
 ### **3. Run**
 ```bash
 npm install
 npm run dev
+# Open: http://localhost:3000
 ```
 
-### **4. Open**
-```
-http://localhost:3000
-```
-
-**📖 Detailed Setup Guide:** [SETUP_ASSEMBLYAI.md](./SETUP_ASSEMBLYAI.md)
+**📖 Detailed Setup Guide:** [SONIOX_SETUP.md](./SONIOX_SETUP.md)
 
 ---
 
 ## ✅ Features
 
-### **🧠 AssemblyAI Integration**
-- **95%+ accuracy** speaker diarization (Doctor/Patient)
-- **Medical vocabulary boost** for enhanced recognition
-- **Professional formatting** with punctuation and capitalization
-- **Confidence scores** for each transcription segment
-- **Superior to Google Cloud** Speech-to-Text
+### **🎤 Soniox Real-Time Transcription**
+- **Live Streaming**: Real-time audio transcription with low latency
+- **Speaker Diarization**: Automatic Doctor/Patient identification
+- **Medical Context**: Optimized for medical terminology and conversations
+- **Language Identification**: Multi-language support with automatic detection
+- **High Accuracy**: Advanced speech recognition models
 
 ### **🎯 Medical Analysis (OpenAI)**
 - **Conversation summary** - key points extraction

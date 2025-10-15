@@ -1,11 +1,13 @@
 export interface TranscriptionSegment {
-  speaker: 'Doctor' | 'Patient';
+  speaker: string; // Changed to support Soniox speaker format (e.g., "Speaker 1", "Speaker 2")
   text: string;
   startTime?: any;
   endTime?: any;
   timestamp?: Date;
   isFinal?: boolean;
   confidence?: number;
+  language?: string; // Added for Soniox language identification
+  isTranslation?: boolean; // Added for Soniox translation support
 }
 
 export interface MedicalAnalysis {

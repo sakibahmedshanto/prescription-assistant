@@ -1,20 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { MedicalAnalysis } from './components/MedicalAnalysis';
-import { ManualDialogueInput } from './components/ManualDialogueInput';
-import { ConversationJsonUpload } from './components/ConversationJsonUpload';
 import { RealTimeRecordingControls } from './components/RealTimeRecordingControls';
 import { RealTimeTranscription } from './components/RealTimeTranscription';
+import { MedicalAnalysis } from './components/MedicalAnalysis';
 import { useSonioxTranscription } from './hooks/useSonioxTranscription';
-import { 
-  TranscriptionSegment, 
-  MedicalAnalysis as MedicalAnalysisType,
-  AnalysisType 
-} from './types';
-import { Download, Trash2, AlertCircle } from 'lucide-react';
+import { TranscriptionSegment } from './types';
 
-export default function PrescriptionAssistant() {
+export default function SonioxRealTimePage() {
   const [showAnalysis, setShowAnalysis] = useState(false);
   
   const {
@@ -29,17 +22,12 @@ export default function PrescriptionAssistant() {
     disconnect,
   } = useSonioxTranscription();
 
-  const [analyses, setAnalyses] = useState<Map<AnalysisType, MedicalAnalysisType>>(
-    new Map()
-  );
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-
   // Convert segments to conversation format for analysis
   const conversationData = {
     conversation: segments.map((segment: TranscriptionSegment) => ({
       speaker: segment.speaker,
       text: segment.text,
-      timestamp: segment.timestamp?.toISOString() || new Date().toISOString(),
+      timestamp: segment.timestamp.toISOString(),
     })),
     metadata: {
       totalSegments: segments.length,
@@ -66,53 +54,6 @@ export default function PrescriptionAssistant() {
     disconnect();
   };
 
-  const handleRequestAnalysis = async (type: AnalysisType) => {
-    if (segments.length === 0) {
-      return;
-    }
-
-    setIsAnalyzing(true);
-
-    try {
-      // Format conversation for analysis
-      const conversation = segments
-        .map((seg) => `${seg.speaker}: ${seg.text}`)
-        .join('\n\n');
-
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          conversation,
-          analysisType: type,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Analysis failed');
-      }
-
-      const data = await response.json();
-
-      const analysis: MedicalAnalysisType = {
-        type,
-        content: data.analysis,
-        timestamp: new Date(),
-        structuredData: data.structuredData,
-        bdMedicines: data.bdMedicines,
-      };
-
-      setAnalyses(prev => new Map(prev.set(type, analysis)));
-    } catch (err: any) {
-      console.error('Analysis error:', err);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
   const handleAnalyze = () => {
     setShowAnalysis(true);
   };
@@ -121,54 +62,13 @@ export default function PrescriptionAssistant() {
     setShowAnalysis(false);
   };
 
-  const handleClearAll = () => {
-    setAnalyses(new Map());
-  };
-
-  const handleExport = () => {
-    const exportData = {
-      timestamp: new Date().toISOString(),
-      conversation: segments,
-      analyses: Array.from(analyses.entries()).map(([type, analysis]) => ({
-        type,
-        ...analysis
-      })),
-      metadata: conversationData.metadata
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: 'application/json',
-    });
-    
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `prescription-${new Date().toISOString()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   if (showAnalysis) {
     return (
-      <div className="min-h-screen bg-gray-100 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-6">
-            <button
-              onClick={handleBackToTranscription}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              ← Back to Transcription
-            </button>
-          </div>
-          <MedicalAnalysis 
-            analyses={analyses}
-            onRequestAnalysis={handleRequestAnalysis}
-            isAnalyzing={isAnalyzing}
-          />
-        </div>
-      </div>
+      <MedicalAnalysis 
+        conversationData={conversationData}
+        onBack={handleBackToTranscription}
+        title="Medical Analysis - Soniox Transcription"
+      />
     );
   }
 
@@ -183,31 +83,10 @@ export default function PrescriptionAssistant() {
           <p className="text-xl text-gray-600 mb-4">
             Real-Time Transcription with Soniox
           </p>
-          <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium">
+            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
             Soniox STT with Speaker Diarization
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex justify-center gap-4 mb-8">
-          <button
-            onClick={handleExport}
-            disabled={segments.length === 0 && analyses.size === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            Export Data
-          </button>
-          
-          <button
-            onClick={handleClearAll}
-            disabled={analyses.size === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-            Clear Analysis
-          </button>
         </div>
 
         {/* Main Content */}
@@ -242,7 +121,7 @@ export default function PrescriptionAssistant() {
             <div className="bg-white rounded-lg shadow-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">
-                  Medical Analysis
+                  Transcription Analysis
                 </h2>
                 <button
                   onClick={handleAnalyze}
@@ -275,40 +154,6 @@ export default function PrescriptionAssistant() {
             </div>
           </div>
         )}
-
-        {/* Alternative Input Methods */}
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Manual Dialogue Input */}
-          <div>
-            <ManualDialogueInput 
-              onAddSegments={(newSegments) => {
-                // For now, just show a message since we're using real-time transcription
-                console.log('Manual dialogue input not integrated with real-time system');
-              }}
-              onClear={() => {
-                // Clear manual segments if any
-              }}
-              currentSegments={[]}
-            />
-          </div>
-
-          {/* JSON Upload */}
-          <div>
-            <ConversationJsonUpload 
-              onLoadConversation={(conversation) => {
-                // Convert uploaded conversation to segments format
-                const uploadedSegments = conversation.map((item: any, index: number) => ({
-                  speaker: item.speaker || `Speaker ${index + 1}`,
-                  text: item.text || '',
-                  timestamp: new Date(item.timestamp || new Date()),
-                  isFinal: true
-                }));
-                // Note: This won't work with real-time system, just for reference
-                console.log('JSON upload not integrated with real-time system');
-              }}
-            />
-          </div>
-        </div>
 
         {/* Features */}
         <div className="mt-8">
@@ -360,22 +205,10 @@ export default function PrescriptionAssistant() {
             <div className="text-sm text-yellow-700 space-y-1">
               <p>1. Get your API key from <a href="https://console.soniox.com" target="_blank" rel="noopener noreferrer" className="underline">console.soniox.com</a></p>
               <p>2. Set environment variable: <code className="bg-yellow-100 px-1 rounded">export SONIOX_API_KEY=your_api_key</code></p>
-              <p>3. Start WebSocket server: <code className="bg-yellow-100 px-1 rounded">npm run ws:soniox</code></p>
+              <p>3. Start WebSocket server: <code className="bg-yellow-100 px-1 rounded">node websocket-server-soniox.js</code></p>
               <p>4. Connect and start recording for real-time transcription</p>
             </div>
           </div>
-        </div>
-
-        {/* Footer Info */}
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>
-            This system uses Soniox real-time transcription and OpenAI for medical
-            conversation analysis.
-          </p>
-          <p className="mt-1">
-            ⚠️ Always verify AI-generated suggestions. This tool is for clinical
-            decision support only.
-          </p>
         </div>
       </div>
     </div>
