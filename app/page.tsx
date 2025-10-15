@@ -85,14 +85,14 @@ export default function PrescriptionAssistant() {
         }
 
         try {
-          // First try Bangla via Soniox
+          
           const responseBangla = await fetch('/api/transcribe-soniox', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               audioContentBase64: base64Audio,
               language: 'bn-BD',
-              enableSpeakerDiarization: true,  // optional but recommended
+              enableSpeakerDiarization: true, 
              diarizationSpeakerCount: 2 
             }),
           });
