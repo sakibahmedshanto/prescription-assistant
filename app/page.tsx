@@ -10,9 +10,14 @@ import { ConversationJsonUpload } from './components/ConversationJsonUpload';
 import { 
   TranscriptionSegment, 
   MedicalAnalysis as MedicalAnalysisType,
-  AnalysisType 
+  AnalysisType,
+  MedicineSearchResult,
+  StructuredMedicineData,
 } from './types';
-import { Download, Trash2, AlertCircle } from 'lucide-react';
+import { Download, Trash2, AlertCircle, Save } from 'lucide-react';
+import { db } from './lib/firebase'; // Firebase import
+import { collection, addDoc, Timestamp } from 'firebase/firestore'; // Firebase Firestore imports
+import { auth } from './lib/firebase'; // If using authentication
 
 export default function PrescriptionAssistant() {
   const {
@@ -31,6 +36,7 @@ export default function PrescriptionAssistant() {
     new Map()
   );
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [uploadedSegments, setUploadedSegments] = useState<TranscriptionSegment[]>([]); // State for uploaded JSON
 
   const handleStartRecording = useCallback(async () => {
     await startRecording();
@@ -49,15 +55,17 @@ export default function PrescriptionAssistant() {
   }, [disconnect]);
 
   const handleRequestAnalysis = useCallback(async (type: AnalysisType) => {
-    if (segments.length === 0) {
+    const allSegments = [...uploadedSegments, ...segments]; // Combine uploaded and real-time segments
+    console.log('All segments for analysis:', allSegments.length);
+    if (allSegments.length === 0) {
+      console.log('No segments to analyze');
       return;
     }
 
     setIsAnalyzing(true);
 
     try {
-      // Format conversation for analysis
-      const conversation = segments
+      const conversation = allSegments
         .map((seg) => `${seg.speaker}: ${seg.text}`)
         .join('\n\n');
 
@@ -91,11 +99,11 @@ export default function PrescriptionAssistant() {
         setAnalyses((prev) => {
           const updated = new Map(prev);
           updated.set(type, newAnalysis);
+          console.log('Updated analyses:', updated); // Debug log
           return updated;
         });
 
-        // Auto-generate medicine suggestions when diagnosis is completed
-        if (type === 'diagnosis' && segments.length > 0) {
+        if (type === 'diagnosis' && allSegments.length > 0) {
           setTimeout(() => {
             handleRequestAnalysis('prescription');
           }, 500);
@@ -106,7 +114,7 @@ export default function PrescriptionAssistant() {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [segments]);
+  }, [segments, uploadedSegments]);
 
   const handleClearAll = useCallback(() => {
     if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
@@ -115,19 +123,22 @@ export default function PrescriptionAssistant() {
   }, []);
 
   const handleAddManualSegments = useCallback((newSegments: TranscriptionSegment[]) => {
-    // For now, just show a message since we're using real-time transcription
     console.log('Manual dialogue input not integrated with real-time system');
   }, []);
 
   const handleLoadJsonConversation = useCallback((newSegments: TranscriptionSegment[]) => {
-    // Note: This won't work with real-time system, just for reference
-    console.log('JSON upload not integrated with real-time system');
+    if (newSegments.length === 0) {
+      console.log('No valid segments loaded');
+      return;
+    }
+    console.log('Loaded segments:', newSegments);
+    setUploadedSegments(newSegments);
   }, []);
 
   const handleExport = useCallback(() => {
     const exportData = {
       timestamp: new Date().toISOString(),
-      conversation: segments,
+      conversation: [...uploadedSegments, ...segments], // Include both uploaded and real-time segments
       analyses: Array.from(analyses.entries()).map(([type, analysis]) => ({
         type,
         content: analysis.content,
@@ -147,7 +158,49 @@ export default function PrescriptionAssistant() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [segments, analyses]);
+  }, [segments, uploadedSegments, analyses]);
+
+  const handleSaveToFirebase = useCallback(async () => {
+    if (analyses.size === 0) {
+      console.log('No analyses to save');
+      return;
+    }
+
+    try {
+      // Prepare data object, handling undefined analyses
+      const dataToSave = {
+        timestamp: Timestamp.now(),
+        userId: auth.currentUser?.uid || 'anonymous', // Use auth if enabled, otherwise anonymous
+        // Only include analyses that exist and transform them
+        ...Array.from(analyses.entries()).reduce((acc, [type, analysis]) => {
+          if (analysis) {
+            acc[type] = {
+              content: analysis.content || 'No content available',
+              timestamp: analysis.timestamp || Timestamp.now(),
+              // Handle structuredData and bdMedicines safely with correct types
+              structuredData: analysis.structuredData || null, // Allow null for optional field
+              bdMedicines: analysis.bdMedicines || [], // Fallback to empty array if undefined
+            };
+          }
+          return acc;
+        }, {} as {
+          [key in AnalysisType]?: {
+            content: string;
+            timestamp: Date | Timestamp;
+            structuredData?: StructuredMedicineData | null; // Match the type
+            bdMedicines?: MedicineSearchResult[]; // Match the type, fallback to empty array
+          };
+        }),
+      };
+
+      const docRef = await addDoc(collection(db, 'analyses'), dataToSave);
+      console.log('Saved with ID:', docRef.id);
+      // Optional: Add UI feedback (e.g., alert or state update)
+    } catch (error) {
+      console.error('Save error:', error);
+      // Optional: Notify user (e.g., with a toast)
+    }
+  }, [analyses]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
@@ -202,7 +255,7 @@ export default function PrescriptionAssistant() {
           
           <button
             onClick={handleExport}
-            disabled={segments.length === 0}
+            disabled={segments.length === 0 && uploadedSegments.length === 0}
             className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Download className="w-4 h-4" />
@@ -211,11 +264,20 @@ export default function PrescriptionAssistant() {
           
           <button
             onClick={handleClearAll}
-            disabled={segments.length === 0 && analyses.size === 0}
+            disabled={segments.length === 0 && analyses.size === 0 && uploadedSegments.length === 0}
             className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Trash2 className="w-4 h-4" />
             Clear All
+          </button>
+          
+          <button
+            onClick={handleSaveToFirebase}
+            disabled={analyses.size === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Save className="w-4 h-4" />
+            Save to Firebase
           </button>
         </div>
 
@@ -239,6 +301,7 @@ export default function PrescriptionAssistant() {
           <div className="h-[600px]">
             <TranscriptionDisplayWithBubbles
               segments={segments}
+              uploadedSegments={uploadedSegments} // Pass uploaded segments
               isConnected={isConnected}
               isRecording={isRecording}
             />

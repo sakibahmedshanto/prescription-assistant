@@ -1,5 +1,20 @@
 const WebSocket = require('ws');
-require('dotenv').config();
+const path = require('path');
+const fs = require('fs');
+
+// Load environment variables from .env.local (Next.js) or .env
+const envLocalPath = path.join(__dirname, '.env.local');
+const envPath = path.join(__dirname, '.env');
+
+if (fs.existsSync(envLocalPath)) {
+  require('dotenv').config({ path: envLocalPath });
+  console.log('Loaded environment variables from .env.local');
+} else if (fs.existsSync(envPath)) {
+  require('dotenv').config({ path: envPath });
+  console.log('Loaded environment variables from .env');
+} else {
+  console.warn('Warning: No .env.local or .env file found');
+}
 
 const SONIOX_WEBSOCKET_URL = "wss://stt-rt.soniox.com/transcribe-websocket";
 
