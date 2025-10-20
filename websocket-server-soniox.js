@@ -211,8 +211,21 @@ class SonioxTranscriptionServer {
     const sonioxWs = this.activeStreams.get(sessionId);
     if (sonioxWs && sonioxWs.readyState === WebSocket.OPEN) {
       try {
+        // Validate audio data
+        if (!audioData || audioData.length === 0) {
+          console.log('Skipping empty audio chunk');
+          return;
+        }
+
         // Convert base64 to buffer
         const audioBuffer = Buffer.from(audioData, 'base64');
+        
+        // Skip very small audio chunks (likely silence or invalid data)
+        // Minimum size check: at least 100 bytes for valid audio
+        if (audioBuffer.length < 100) {
+          console.log(`Skipping small audio chunk: ${audioBuffer.length} bytes`);
+          return;
+        }
         
         // Send audio data to Soniox
         sonioxWs.send(audioBuffer);
@@ -222,6 +235,12 @@ class SonioxTranscriptionServer {
         
       } catch (error) {
         console.error('Error sending audio chunk to Soniox:', error);
+        // Send error to client
+        this.sendToSession(sessionId, {
+          type: 'error',
+          message: 'Error processing audio chunk',
+          error: error.message
+        });
       }
     }
   }
@@ -229,6 +248,13 @@ class SonioxTranscriptionServer {
   handleSonioxResponse(sessionId, response) {
     // Handle Soniox error response
     if (response.error_code) {
+      // Suppress audio decode errors during silence - these are normal
+      if (response.error_code === 'AUDIO_DECODE_ERROR') {
+        console.log(`Audio decode error (likely silence): ${response.error_message}`);
+        // Don't send error to client for audio decode errors - these are expected during silence
+        return;
+      }
+      
       console.error(`Soniox error: ${response.error_code} - ${response.error_message}`);
       this.sendToSession(sessionId, {
         type: 'error',

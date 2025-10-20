@@ -189,11 +189,15 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
       });
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
+        // Only send chunks that are large enough (at least 1KB)
+        // This filters out silence and very small/invalid chunks
+        if (event.data.size > 1000) {
           audioChunksRef.current.push(event.data);
           
           // Send audio chunk to WebSocket
           sendAudioChunk(event.data);
+        } else if (event.data.size > 0) {
+          console.log(`Skipping small audio chunk: ${event.data.size} bytes (likely silence)`);
         }
       };
 
@@ -255,13 +259,19 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
   const sendAudioChunk = useCallback(async (audioBlob: Blob) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       try {
+        // Skip empty or very small blobs
+        if (!audioBlob || audioBlob.size < 100) {
+          console.log('Skipping empty or too small audio blob');
+          return;
+        }
+
         // Convert blob to base64
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         
         reader.onloadend = () => {
           const base64Audio = reader.result?.toString().split(',')[1];
-          if (base64Audio) {
+          if (base64Audio && base64Audio.length > 0) {
             wsRef.current?.send(JSON.stringify({
               type: 'audio_chunk',
               audioData: base64Audio,
