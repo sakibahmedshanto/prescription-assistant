@@ -27,6 +27,9 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
   const streamRef = useRef<MediaStream | null>(null);
   const sessionIdRef = useRef<string>(generateSessionId());
   const audioChunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
 
   // Generate unique session ID
   function generateSessionId(): string {
@@ -157,8 +160,32 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
     }
   }, []);
 
+  // Send PCM audio chunk to WebSocket
+  const sendPCMAudioChunk = useCallback((pcmData: Int16Array) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      try {
+        // Convert Int16Array to base64
+        const buffer = new Uint8Array(pcmData.buffer);
+        const base64Audio = btoa(String.fromCharCode(...buffer));
+        
+        wsRef.current.send(JSON.stringify({
+          type: 'audio_chunk',
+          audioData: base64Audio,
+          config: {
+            encoding: 'LINEAR16',
+            sampleRateHertz: 16000,
+            languageCode: 'en-US',
+          }
+        }));
+      } catch (err) {
+        console.error('Error sending PCM audio chunk:', err);
+      }
+    }
+  }, []);
+
   // Start recording
   const startRecording = useCallback(async () => {
+    // Define sendPCMAudioChunk inside startRecording to capture dependencies
     if (!isConnected) {
       setError('Not connected to transcription server');
       return;
@@ -176,117 +203,98 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          sampleRate: 48000,
+          autoGainControl: true,
+          sampleRate: 16000, // Lower sample rate for better reliability
         }
       });
 
       streamRef.current = stream;
-      audioChunksRef.current = [];
 
-      // Create MediaRecorder with small time slices for streaming
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus',
-      });
+      // Create AudioContext for raw PCM audio
+      const audioContext = new AudioContext({ sampleRate: 16000 });
+      audioContextRef.current = audioContext;
 
-      mediaRecorder.ondataavailable = (event) => {
-        // Only send chunks that are large enough (at least 1KB)
-        // This filters out silence and very small/invalid chunks
-        if (event.data.size > 1000) {
-          audioChunksRef.current.push(event.data);
-          
-          // Send audio chunk to WebSocket
-          sendAudioChunk(event.data);
-        } else if (event.data.size > 0) {
-          console.log(`Skipping small audio chunk: ${event.data.size} bytes (likely silence)`);
-        }
-      };
+      const source = audioContext.createMediaStreamSource(stream);
+      sourceRef.current = source;
 
-      mediaRecorder.onstart = () => {
-        setIsRecording(true);
-        console.log('Recording started for Soniox');
+      // Use ScriptProcessorNode for raw PCM audio extraction
+      const processor = audioContext.createScriptProcessor(4096, 1, 1);
+      processorRef.current = processor;
+
+      processor.onaudioprocess = (e) => {
+        const inputData = e.inputBuffer.getChannelData(0);
         
-        // Start transcription stream
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({
-            type: 'start_stream',
-            config: {
-              encoding: 'WEBM_OPUS',
-              sampleRateHertz: 48000,
-              languageCode: 'en-US',
-            }
-          }));
+        // Convert Float32Array to Int16Array (PCM S16LE)
+        const pcmData = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          // Clamp the value to [-1, 1] and convert to 16-bit integer
+          const s = Math.max(-1, Math.min(1, inputData[i]));
+          pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
         }
+
+        // Send PCM data directly
+        sendPCMAudioChunk(pcmData);
       };
 
-      mediaRecorder.onstop = () => {
-        setIsRecording(false);
-        console.log('Recording stopped for Soniox');
-        
-        // Stop transcription stream
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({
-            type: 'stop_stream'
-          }));
-        }
-      };
+      source.connect(processor);
+      processor.connect(audioContext.destination);
 
-      mediaRecorderRef.current = mediaRecorder;
+      setIsRecording(true);
+      console.log('Recording started for Soniox (PCM format)');
       
-      // Start recording with small time slices for real-time streaming
-      mediaRecorder.start(1000); // Collect data every 1 second
+      // Start transcription stream with LINEAR16 encoding
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({
+          type: 'start_stream',
+          config: {
+            encoding: 'LINEAR16',
+            sampleRateHertz: 16000,
+            languageCode: 'en-US',
+          }
+        }));
+      }
 
     } catch (err: any) {
       console.error('Error starting recording:', err);
       setError(err.message || 'Failed to start recording');
     }
-  }, [isConnected, isRecording]);
+  }, [isConnected, isRecording, sendPCMAudioChunk]);
 
   // Stop recording
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
+    setIsRecording(false);
+    
+    // Disconnect audio nodes
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
     }
 
+    if (sourceRef.current) {
+      sourceRef.current.disconnect();
+      sourceRef.current = null;
+    }
+
+    // Close audio context
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+
+    // Stop media stream
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
 
-    setIsRecording(false);
-  }, []);
-
-  // Send audio chunk to WebSocket
-  const sendAudioChunk = useCallback(async (audioBlob: Blob) => {
+    // Stop transcription stream
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      try {
-        // Skip empty or very small blobs
-        if (!audioBlob || audioBlob.size < 100) {
-          console.log('Skipping empty or too small audio blob');
-          return;
-        }
-
-        // Convert blob to base64
-        const reader = new FileReader();
-        reader.readAsDataURL(audioBlob);
-        
-        reader.onloadend = () => {
-          const base64Audio = reader.result?.toString().split(',')[1];
-          if (base64Audio && base64Audio.length > 0) {
-            wsRef.current?.send(JSON.stringify({
-              type: 'audio_chunk',
-              audioData: base64Audio,
-              config: {
-                encoding: 'WEBM_OPUS',
-                sampleRateHertz: 48000,
-                languageCode: 'en-US',
-              }
-            }));
-          }
-        };
-      } catch (err) {
-        console.error('Error sending audio chunk:', err);
-      }
+      wsRef.current.send(JSON.stringify({
+        type: 'stop_stream'
+      }));
     }
+
+    console.log('Recording stopped for Soniox');
   }, []);
 
   // Cleanup on unmount
