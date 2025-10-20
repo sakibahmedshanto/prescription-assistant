@@ -6,14 +6,12 @@ import { User, Stethoscope } from 'lucide-react';
 
 interface TranscriptionDisplayWithBubblesProps {
   segments: TranscriptionSegment[];
-  uploadedSegments: TranscriptionSegment[]; // New prop for uploaded JSON segments
   isConnected: boolean;
   isRecording: boolean;
 }
 
 export function TranscriptionDisplayWithBubbles({ 
   segments, 
-  uploadedSegments, 
   isConnected, 
   isRecording 
 }: TranscriptionDisplayWithBubblesProps) {
@@ -24,7 +22,7 @@ export function TranscriptionDisplayWithBubbles({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [segments, uploadedSegments]); // Include uploadedSegments in dependency array
+  }, [segments]);
 
   // Convert speaker format to Doctor/Patient
   const getSpeakerLabel = (speaker: string) => {
@@ -50,9 +48,6 @@ export function TranscriptionDisplayWithBubbles({
     }
     return 'bg-green-500';
   };
-
-  // Combine segments and uploadedSegments for display
-  const allSegments = [...uploadedSegments, ...segments]; // Prioritize uploaded segments by listing first
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
@@ -91,7 +86,7 @@ export function TranscriptionDisplayWithBubbles({
         className="flex-1 overflow-y-auto space-y-4 pr-2"
         style={{ scrollbarWidth: 'thin' }}
       >
-        {allSegments.length === 0 ? (
+        {segments.length === 0 ? (
           <div className="text-center text-gray-400 py-12">
             <div className="mb-4">
               <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center ${
@@ -115,7 +110,7 @@ export function TranscriptionDisplayWithBubbles({
             </p>
           </div>
         ) : (
-          allSegments.map((segment, index) => {
+          segments.map((segment, index) => {
             const speakerLabel = getSpeakerLabel(segment.speaker);
             const isDoctor = speakerLabel === 'Doctor';
             
@@ -170,15 +165,15 @@ export function TranscriptionDisplayWithBubbles({
       </div>
 
       {/* Footer Stats */}
-      {allSegments.length > 0 && (
+      {segments.length > 0 && (
         <div className="mt-4 pt-4 border-t border-gray-200">
           <div className="flex justify-between text-sm text-gray-500">
             <div>
-              <span className="font-medium">Total Segments:</span> {allSegments.length}
+              <span className="font-medium">Total Segments:</span> {segments.length}
             </div>
             <div>
-              <span className="font-medium">Doctors:</span> {allSegments.filter(s => getSpeakerLabel(s.speaker) === 'Doctor').length} | 
-              <span className="font-medium"> Patients:</span> {allSegments.filter(s => getSpeakerLabel(s.speaker) === 'Patient').length}
+              <span className="font-medium">Doctors:</span> {segments.filter(s => getSpeakerLabel(s.speaker) === 'Doctor').length} | 
+              <span className="font-medium"> Patients:</span> {segments.filter(s => getSpeakerLabel(s.speaker) === 'Patient').length}
             </div>
           </div>
         </div>
@@ -186,3 +181,4 @@ export function TranscriptionDisplayWithBubbles({
     </div>
   );
 }
+
