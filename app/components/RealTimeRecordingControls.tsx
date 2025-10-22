@@ -28,12 +28,12 @@ export function RealTimeRecordingControls({
       <h2 className="text-2xl font-bold mb-4 text-gray-800">
         Real-Time Recording
       </h2>
-      
+
       {/* Connection Status */}
       <div className="mb-6">
         <div className={`flex items-center gap-3 p-3 rounded-lg ${
-          isConnected 
-            ? 'bg-green-50 border border-green-200' 
+          isConnected
+            ? 'bg-green-50 border border-green-200'
             : 'bg-red-50 border border-red-200'
         }`}>
           {isConnected ? (
@@ -41,7 +41,7 @@ export function RealTimeRecordingControls({
           ) : (
             <WifiOff className="w-5 h-5 text-red-600" />
           )}
-          
+
           <div>
             <div className={`font-semibold ${
               isConnected ? 'text-green-800' : 'text-red-800'
@@ -51,13 +51,13 @@ export function RealTimeRecordingControls({
             <div className={`text-sm ${
               isConnected ? 'text-green-600' : 'text-red-600'
             }`}>
-              {isConnected 
-                ? 'Real-time transcription ready' 
+              {isConnected
+                ? 'Real-time transcription ready'
                 : 'Unable to connect to transcription server'
               }
             </div>
           </div>
-          
+
           <div className="ml-auto">
             {isConnected ? (
               <button
@@ -168,7 +168,7 @@ export function RealTimeRecordingControls({
       {/* Technical Info */}
       <div className="mt-4 text-xs text-gray-500 text-center">
         <p>Real-time streaming • Speaker diarization • WebSocket connection</p>
-        <p>Server: ws://localhost:8080 • Audio: 48kHz Opus • Latency: ~2-3 seconds</p>
+        <p>Server: ws://localhost:8081 • Audio: 48kHz Opus • Latency: ~2-3 seconds</p>
       </div>
     </div>
   );

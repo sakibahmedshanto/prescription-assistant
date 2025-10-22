@@ -4,7 +4,7 @@ import { WebSocketServer } from 'ws';
 
 // Initialize Google Cloud Speech client
 const getSpeechClient = () => {
-  const credentials = process.env.GOOGLE_CLOUD_CREDENTIALS 
+  const credentials = process.env.GOOGLE_CLOUD_CREDENTIALS
     ? JSON.parse(process.env.GOOGLE_CLOUD_CREDENTIALS)
     : undefined;
 
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
   // Create WebSocket server
   const wss = new WebSocketServer({ noServer: true });
-  
+
   return new Response(null, {
     status: 101,
     headers: {
@@ -44,7 +44,7 @@ export class TranscriptionWebSocketServer {
   private activeStreams: Map<string, any> = new Map();
 
   constructor() {
-    this.wss = new WebSocketServer({ port: 8080 });
+    this.wss = new WebSocketServer({ port: 8081 });
     this.speechClient = getSpeechClient();
     this.setupWebSocketServer();
   }
@@ -53,12 +53,12 @@ export class TranscriptionWebSocketServer {
     this.wss.on('connection', (ws, request) => {
       const url = new URL(request.url || '', `http://${request.headers.host}`);
       const sessionId = url.searchParams.get('sessionId') || 'default';
-      
+
       console.log(`WebSocket connection established for session: ${sessionId}`);
-      
+
       // Store connection
       connections.set(sessionId, ws);
-      
+
       // Send welcome message
       ws.send(JSON.stringify({
         type: 'connected',
@@ -70,7 +70,7 @@ export class TranscriptionWebSocketServer {
       ws.on('message', async (data) => {
         try {
           const message = JSON.parse(data.toString());
-          
+
           switch (message.type) {
             case 'audio_chunk':
               await this.handleAudioChunk(sessionId, message.audioData, message.config);
@@ -199,7 +199,7 @@ export class TranscriptionWebSocketServer {
       if (stream) {
         // Convert base64 to buffer
         const audioBuffer = Buffer.from(audioData, 'base64');
-        
+
         // Send audio data to Google Cloud Speech
         stream.write({
           audioContent: audioBuffer,
@@ -218,7 +218,7 @@ export class TranscriptionWebSocketServer {
       if (stream) {
         stream.end();
         this.activeStreams.delete(sessionId);
-        
+
         const ws = connections.get(sessionId);
         if (ws && ws.readyState === ws.OPEN) {
           ws.send(JSON.stringify({
@@ -292,7 +292,7 @@ export class TranscriptionWebSocketServer {
     // Assign speaker labels (more words = Doctor)
     const speakers = Array.from(speakerCounts.entries()).sort((a, b) => b[1] - a[1]);
     const speakerMap = new Map<number, string>();
-    
+
     if (speakers.length >= 2) {
       speakerMap.set(speakers[0][0], 'Doctor');
       speakerMap.set(speakers[1][0], 'Patient');
@@ -343,5 +343,5 @@ let wsServer: TranscriptionWebSocketServer | null = null;
 
 if (!wsServer) {
   wsServer = new TranscriptionWebSocketServer();
-  console.log('WebSocket server started on port 8080');
+  console.log('WebSocket server started on port 8081');
 }

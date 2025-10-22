@@ -1,12 +1,11 @@
 'use client';
-
 import { useState } from 'react';
 import { MedicalAnalysis as MedicalAnalysisType, AnalysisType } from '../types';
-import { 
-  FileText, 
-  Activity, 
-  ClipboardList, 
-  Pill, 
+import {
+  FileText,
+  Activity,
+  ClipboardList,
+  Pill,
   Calendar,
   Loader2,
   RefreshCw
@@ -45,10 +44,10 @@ const analysisConfig = {
   }
 };
 
-export function MedicalAnalysis({ 
-  analyses, 
-  onRequestAnalysis, 
-  isAnalyzing 
+export function MedicalAnalysis({
+  analyses,
+  onRequestAnalysis,
+  isAnalyzing
 }: MedicalAnalysisProps) {
   const [activeTab, setActiveTab] = useState<AnalysisType>('summary');
 
@@ -68,7 +67,7 @@ export function MedicalAnalysis({
           const tabConfig = analysisConfig[type];
           const TabIcon = tabConfig.icon;
           const hasAnalysis = analyses.has(type);
-          
+
           return (
             <button
               key={type}
@@ -99,7 +98,7 @@ export function MedicalAnalysis({
                 {config.title}
               </h3>
             </div>
-            
+
             <button
               onClick={() => onRequestAnalysis(activeTab)}
               disabled={isAnalyzing}
@@ -122,7 +121,7 @@ export function MedicalAnalysis({
               )}
             </button>
           </div>
-          
+
           <p className="text-sm text-gray-500">{config.description}</p>
         </div>
 
@@ -145,11 +144,10 @@ export function MedicalAnalysis({
                 {/* Prescription Items */}
                 <div className="space-y-3">
                   {analysis.structuredData && analysis.structuredData.medicines && analysis.structuredData.medicines.map((med, idx) => {
-                    // Find the first medicine for this generic
-                    const firstMedicine = analysis.bdMedicines.find(result => 
+                    const firstMedicine = analysis.bdMedicines.find(result =>
                       result.medicine.generic.toLowerCase() === med.genericName.toLowerCase()
                     );
-                    
+
                     if (!firstMedicine) return null;
 
                     return (
@@ -167,7 +165,7 @@ export function MedicalAnalysis({
                             (click to see other alternatives)
                           </button>
                         </div>
-                        
+
                         <div className="bg-green-50 rounded-lg p-3">
                           <p className="text-gray-800 font-medium">
                             {med.dosage || 'As directed by physician'}
@@ -183,8 +181,8 @@ export function MedicalAnalysis({
 
                 <div className="mt-6 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
                   <p className="text-sm text-yellow-900 leading-relaxed">
-                    <strong>⚠️ Medical Disclaimer:</strong> This prescription is for reference only. 
-                    Always verify patient allergies, contraindications, and potential drug interactions before prescribing. 
+                    <strong>⚠️ Medical Disclaimer:</strong> This prescription is for reference only.
+                    Always verify patient allergies, contraindications, and potential drug interactions before prescribing.
                     Final medication selection and dosage must be determined by a licensed physician based on complete patient evaluation.
                   </p>
                 </div>
@@ -198,146 +196,143 @@ export function MedicalAnalysis({
                       {analysis.content}
                     </div>
                   </div>
-                  
+
                   <div className="mt-4 text-xs text-gray-400">
                     Generated at {analysis.timestamp.toLocaleTimeString()}
                   </div>
                 </div>
 
-                {/* Bangladesh Medicines Section - Only for prescription_with_medicines */}
+                {/* Bangladesh Medicines Section */}
                 {analysis.bdMedicines && analysis.bdMedicines.length > 0 && (
-              <div className="bg-white rounded-lg border-2 border-teal-200 p-4">
-                {/* Conditions & Medicine Summary */}
-                {analysis.structuredData && (
-                  <>
-                    {analysis.structuredData.conditions && analysis.structuredData.conditions.length > 0 && (
-                      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 mb-4 border border-blue-200">
-                        <h4 className="text-lg font-bold text-blue-800 mb-2">
-                          🏥 Diagnosed Conditions
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          {analysis.structuredData.conditions.map((condition, idx) => (
-                            <span
-                              key={idx}
-                              className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium"
-                            >
-                              {condition}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {analysis.structuredData.medicines && analysis.structuredData.medicines.length > 0 && (
-                      <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-4 mb-4 border border-green-200">
-                        <h4 className="text-lg font-bold text-green-800 mb-3">
-                          💊 Recommended Generic Medicines
-                        </h4>
-                        <div className="space-y-2">
-                          {analysis.structuredData.medicines.map((med, idx) => (
-                            <div key={idx} className="bg-white rounded-lg p-3 border border-green-100">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <h5 className="font-bold text-gray-800">{med.genericName}</h5>
-                                  <p className="text-sm text-gray-600 mt-1">
-                                    <span className="font-medium">For:</span> {med.indication}
-                                  </p>
-                                  <div className="flex gap-4 mt-2 text-xs text-gray-500">
-                                    <span>📊 {med.dosage}</span>
-                                    <span>⏱️ {med.duration}</span>
-                                  </div>
-                                  {med.instructions && (
-                                    <p className="text-xs text-blue-600 mt-1">
-                                      ℹ️ {med.instructions}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
+                  <div className="bg-white rounded-lg border-2 border-teal-200 p-4">
+                    {analysis.structuredData && (
+                      <>
+                        {analysis.structuredData.conditions && analysis.structuredData.conditions.length > 0 && (
+                          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 mb-4 border border-blue-200">
+                            <h4 className="text-lg font-bold text-blue-800 mb-2">
+                              🩺 Diagnosed Conditions
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                              {analysis.structuredData.conditions.map((condition, idx) => (
+                                <span
+                                  key={idx}
+                                  className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium"
+                                >
+                                  {condition}
+                                </span>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                <h4 className="text-lg font-semibold text-teal-700 mb-3 flex items-center gap-2">
-                  <Pill className="w-5 h-5" />
-                  💊 Available Bangladesh Medicines ({analysis.bdMedicines.length})
-                </h4>
-                
-                <div className="grid gap-3 max-h-96 overflow-y-auto">
-                  {analysis.bdMedicines.map((result, idx) => (
-                    <div 
-                      key={`${result.medicine.brandId}-${idx}`}
-                      className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg p-4 border border-teal-100 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h5 className="font-bold text-gray-800 text-base">
-                            {result.medicine.brandName}
-                          </h5>
-                          <p className="text-sm text-teal-600 font-medium">
-                            {result.medicine.generic}
-                          </p>
-                        </div>
-                        <span className="bg-teal-500 text-white text-xs px-2 py-1 rounded-full">
-                          {result.medicine.type}
-                        </span>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-2 text-sm mt-3">
-                        <div>
-                          <span className="text-gray-500">Strength:</span>
-                          <p className="text-gray-700 font-medium">{result.medicine.strength}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Form:</span>
-                          <p className="text-gray-700 font-medium">{result.medicine.dosageForm}</p>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-gray-500">Manufacturer:</span>
-                          <p className="text-gray-700 font-medium">{result.medicine.manufacturer}</p>
-                        </div>
-                        {result.medicine.packageContainer && (
-                          <div className="col-span-2">
-                            <span className="text-gray-500">Package:</span>
-                            <p className="text-gray-700 font-medium">{result.medicine.packageContainer}</p>
                           </div>
                         )}
-                      </div>
 
-                      {/* Generic Info - Indication */}
-                      {result.genericInfo && result.genericInfo.indication && (
-                        <div className="mt-3 pt-3 border-t border-teal-200">
-                          <span className="text-gray-500 text-xs">Indication:</span>
-                          <p className="text-gray-600 text-xs mt-1 line-clamp-2">
-                            {result.genericInfo.indication}
-                          </p>
-                        </div>
-                      )}
+                        {analysis.structuredData.medicines && analysis.structuredData.medicines.length > 0 && (
+                          <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-lg p-4 mb-4 border border-green-200">
+                            <h4 className="text-lg font-bold text-green-800 mb-3">
+                              💊 Recommended Generic Medicines
+                            </h4>
+                            <div className="space-y-2">
+                              {analysis.structuredData.medicines.map((med, idx) => (
+                                <div key={idx} className="bg-white rounded-lg p-3 border border-green-100">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <h5 className="font-bold text-gray-800">{med.genericName}</h5>
+                                      <p className="text-sm text-gray-600 mt-1">
+                                        <span className="font-medium">For:</span> {med.indication}
+                                      </p>
+                                      <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                                        <span>📋 {med.dosage}</span>
+                                        <span>⏱️ {med.duration}</span>
+                                      </div>
+                                      {med.instructions && (
+                                        <p className="text-xs text-blue-600 mt-1">
+                                          ℹ️ {med.instructions}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
 
-                      {/* Drug Class */}
-                      {result.genericInfo && result.genericInfo.drugClass && (
-                        <div className="mt-2">
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
-                            {result.genericInfo.drugClass}
-                          </span>
+                    <h4 className="text-lg font-semibold text-teal-700 mb-3 flex items-center gap-2">
+                      <Pill className="w-5 h-5" />
+                      💊 Available Bangladesh Medicines ({analysis.bdMedicines.length})
+                    </h4>
+
+                    <div className="grid gap-3 max-h-96 overflow-y-auto">
+                      {analysis.bdMedicines.map((result, idx) => (
+                        <div
+                          key={`${result.medicine.brandId}-${idx}`}
+                          className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-lg p-4 border border-teal-100 hover:shadow-md transition-shadow"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h5 className="font-bold text-gray-800 text-base">
+                                {result.medicine.brandName}
+                              </h5>
+                              <p className="text-sm text-teal-600 font-medium">
+                                {result.medicine.generic}
+                              </p>
+                            </div>
+                            <span className="bg-teal-500 text-white text-xs px-2 py-1 rounded-full">
+                              {result.medicine.type}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-sm mt-3">
+                            <div>
+                              <span className="text-gray-500">Strength:</span>
+                              <p className="text-gray-700 font-medium">{result.medicine.strength}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Form:</span>
+                              <p className="text-gray-700 font-medium">{result.medicine.dosageForm}</p>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="text-gray-500">Manufacturer:</span>
+                              <p className="text-gray-700 font-medium">{result.medicine.manufacturer}</p>
+                            </div>
+                            {result.medicine.packageContainer && (
+                              <div className="col-span-2">
+                                <span className="text-gray-500">Package:</span>
+                                <p className="text-gray-700 font-medium">{result.medicine.packageContainer}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {result.genericInfo && result.genericInfo.indication && (
+                            <div className="mt-3 pt-3 border-t border-teal-200">
+                              <span className="text-gray-500 text-xs">Indication:</span>
+                              <p className="text-gray-600 text-xs mt-1 line-clamp-2">
+                                {result.genericInfo.indication}
+                              </p>
+                            </div>
+                          )}
+
+                          {result.genericInfo && result.genericInfo.drugClass && (
+                            <div className="mt-2">
+                              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                                {result.genericInfo.drugClass}
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </div>
 
-                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-xs text-yellow-800">
-                    <strong>⚠️ Medical Disclaimer:</strong> This information is for reference only. 
-                    Always verify patient allergies, contraindications, and drug interactions before prescribing. 
-                    Final medication selection must be made by a licensed physician.
-                  </p>
-                </div>
-              </div>
-            )}
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-xs text-yellow-800">
+                        <strong>⚠️ Medical Disclaimer:</strong> This information is for reference only.
+                        Always verify patient allergies, contraindications, and drug interactions before prescribing.
+                        Final medication selection must be made by a licensed physician.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -354,4 +349,3 @@ export function MedicalAnalysis({
     </div>
   );
 }
-

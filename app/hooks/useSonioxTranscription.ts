@@ -43,7 +43,7 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
     }
 
     try {
-      const wsUrl = `ws://localhost:8080?sessionId=${sessionIdRef.current}`;
+      const wsUrl = `ws://localhost:8081?sessionId=${sessionIdRef.current}`;
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
@@ -152,7 +152,7 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
         setSegments(prev => {
           // Keep all final segments
           const finalSegments = prev.filter(seg => seg.isFinal);
-          
+
           // Add new interim segments
           return [...finalSegments, ...newSegments];
         });
@@ -167,7 +167,7 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
         // Convert Int16Array to base64
         const buffer = new Uint8Array(pcmData.buffer);
         const base64Audio = btoa(String.fromCharCode(...buffer));
-        
+
         wsRef.current.send(JSON.stringify({
           type: 'audio_chunk',
           audioData: base64Audio,
@@ -223,7 +223,7 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
 
       processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
-        
+
         // Convert Float32Array to Int16Array (PCM S16LE)
         const pcmData = new Int16Array(inputData.length);
         for (let i = 0; i < inputData.length; i++) {
@@ -241,7 +241,7 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
 
       setIsRecording(true);
       console.log('Recording started for Soniox (PCM format)');
-      
+
       // Start transcription stream with LINEAR16 encoding
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({
@@ -263,7 +263,7 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
   // Stop recording
   const stopRecording = useCallback(() => {
     setIsRecording(false);
-    
+
     // Disconnect audio nodes
     if (processorRef.current) {
       processorRef.current.disconnect();
@@ -308,7 +308,7 @@ export function useSonioxTranscription(): UseSonioxTranscriptionReturn {
   // Auto-connect on mount
   useEffect(() => {
     connect();
-    
+
     return () => {
       disconnect();
     };

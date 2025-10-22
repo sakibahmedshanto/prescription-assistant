@@ -20,11 +20,11 @@ const SONIOX_WEBSOCKET_URL = "wss://stt-rt.soniox.com/transcribe-websocket";
 
 class SonioxTranscriptionServer {
   constructor() {
-    this.wss = new WebSocket.Server({ port: 8080 });
+    this.wss = new WebSocket.Server({ port: 8081 });
     this.connections = new Map();
     this.activeStreams = new Map();
     this.setupWebSocketServer();
-    console.log('Soniox WebSocket server running on port 8080');
+    console.log('Soniox WebSocket server running on port 8081');
   }
 
   setupWebSocketServer() {
@@ -127,7 +127,7 @@ class SonioxTranscriptionServer {
         console.log('Connected to Soniox WebSocket');
         // Send config to Soniox
         sonioxWs.send(JSON.stringify(sonioxConfig));
-        
+
         // Store the Soniox WebSocket connection
         this.activeStreams.set(sessionId, sonioxWs);
 
@@ -216,10 +216,10 @@ class SonioxTranscriptionServer {
       try {
         // Convert base64 to buffer
         const audioBuffer = Buffer.from(audioData, 'base64');
-        
+
         // Send audio data to Soniox
         sonioxWs.send(audioBuffer);
-        
+
       } catch (error) {
         console.error('Error sending audio chunk to Soniox:', error);
       }
@@ -289,7 +289,7 @@ class SonioxTranscriptionServer {
         if (currentSegment) {
           speakerSegments.push(currentSegment);
         }
-        
+
         currentSpeaker = speaker;
         currentSegment = {
           speaker: `Speaker ${currentSpeaker}`,
@@ -339,12 +339,12 @@ class SonioxTranscriptionServer {
       try {
         // Send empty string to signal end-of-audio to Soniox
         sonioxWs.send('');
-        
+
         // Close the connection after a short delay
         setTimeout(() => {
           sonioxWs.close();
         }, 1000);
-        
+
         console.log(`Stopped Soniox transcription stream for session: ${sessionId}`);
       } catch (error) {
         console.error(`Error stopping Soniox stream for session ${sessionId}:`, error);

@@ -5,9 +5,9 @@ import { useRealTimeTranscription } from './hooks/useRealTimeTranscription';
 import { RealTimeTranscription } from './components/RealTimeTranscription';
 import { MedicalAnalysis } from './components/MedicalAnalysis';
 import { RealTimeRecordingControls } from './components/RealTimeRecordingControls';
-import { 
+import {
   MedicalAnalysis as MedicalAnalysisType,
-  AnalysisType 
+  AnalysisType
 } from './types';
 import { Download, Trash2, AlertCircle, Wifi } from 'lucide-react';
 
@@ -110,7 +110,7 @@ export default function RealTimePrescriptionAssistant() {
     const blob = new Blob([JSON.stringify(exportData, null, 2)], {
       type: 'application/json',
     });
-    
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -135,7 +135,7 @@ export default function RealTimePrescriptionAssistant() {
                 Live streaming transcription with WebSocket connection
               </p>
             </div>
-            
+
             <div className="text-right">
               <div className={`flex items-center gap-2 mb-1 ${
                 isConnected ? 'text-green-600' : 'text-red-600'
@@ -146,7 +146,7 @@ export default function RealTimePrescriptionAssistant() {
                 </span>
               </div>
               <p className="text-xs text-gray-500">
-                WebSocket: ws://localhost:8080
+                WebSocket: ws://localhost:8081
               </p>
             </div>
           </div>
@@ -179,7 +179,7 @@ export default function RealTimePrescriptionAssistant() {
             <Download className="w-4 h-4" />
             Export Data
           </button>
-          
+
           <button
             onClick={handleClearAll}
             disabled={segments.length === 0 && analyses.size === 0}
@@ -235,7 +235,7 @@ export default function RealTimePrescriptionAssistant() {
             decision support only.
           </p>
           <p className="mt-1">
-            <strong>Server Status:</strong> {isConnected ? 'Connected' : 'Disconnected'} | 
+            <strong>Server Status:</strong> {isConnected ? 'Connected' : 'Disconnected'} |
             <strong> Recording:</strong> {isRecording ? 'Active' : 'Inactive'} |
             <strong> Segments:</strong> {segments.length}
           </p>

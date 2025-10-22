@@ -4,32 +4,45 @@ import {
   searchMedicinesByIndication,
   searchMedicinesCombined,
   getTopMedicines,
-  MedicineSearchResult
+  loadMedicineData
 } from '@/app/lib/medicineDatabase';
 
-export async function POST(request: NextRequest) {
+export async function POST(request) {
   try {
     const body = await request.json();
-    const { genericNames = [], indications = [], limit = 20 } = body;
+    const { genericNames = [], indications = [], query, limit = 20 } = body;
 
-    if (!genericNames.length && !indications.length) {
-      return NextResponse.json(
-        { error: 'Please provide genericNames or indications' },
-        { status: 400 }
-      );
+    let results = [];
+
+    // Handle simple query search (for RxEditor)
+    if (query) {
+      const medicines = loadMedicineData();
+      const lowerQuery = query.toLowerCase();
+
+      results = medicines
+        .filter(med =>
+          med.brandName?.toLowerCase().includes(lowerQuery) ||
+          med.generic?.toLowerCase().includes(lowerQuery) ||
+          med.manufacturer?.toLowerCase().includes(lowerQuery)
+        )
+        .slice(0, limit)
+        .map(medicine => ({
+          medicine,
+          relevanceScore: 80
+        }));
     }
-
-    let results: MedicineSearchResult[] = [];
-
-    if (genericNames.length && indications.length) {
-      // Search by both
+    // Handle structured search (existing functionality)
+    else if (genericNames.length && indications.length) {
       results = searchMedicinesCombined(genericNames, indications);
     } else if (genericNames.length) {
-      // Search by generic only
       results = searchMedicinesByGeneric(genericNames);
-    } else {
-      // Search by indication only
+    } else if (indications.length) {
       results = searchMedicinesByIndication(indications);
+    } else {
+      return NextResponse.json(
+        { error: 'Please provide query, genericNames, or indications' },
+        { status: 400 }
+      );
     }
 
     // Limit results
@@ -49,3 +62,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function GET() {
+  return NextResponse.json({
+    status: 'ok',
+    message: 'Medicine search API is running'
+  });
+}

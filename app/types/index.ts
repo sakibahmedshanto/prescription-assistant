@@ -78,4 +78,3 @@ export interface AnalysisState {
   analyses: Map<AnalysisType, MedicalAnalysis>;
   isAnalyzing: boolean;
 }
-

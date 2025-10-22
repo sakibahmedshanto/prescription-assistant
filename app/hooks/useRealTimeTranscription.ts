@@ -38,7 +38,7 @@ export function useRealTimeTranscription(): UseRealTimeTranscriptionReturn {
     }
 
     try {
-      const wsUrl = `ws://localhost:8080?sessionId=${sessionIdRef.current}`;
+      const wsUrl = `ws://localhost:8081?sessionId=${sessionIdRef.current}`;
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
@@ -172,7 +172,7 @@ export function useRealTimeTranscription(): UseRealTimeTranscriptionReturn {
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
-          
+
           // Send audio chunk to WebSocket
           sendAudioChunk(event.data);
         }
@@ -181,7 +181,7 @@ export function useRealTimeTranscription(): UseRealTimeTranscriptionReturn {
       mediaRecorder.onstart = () => {
         setIsRecording(true);
         console.log('Recording started');
-        
+
         // Start transcription stream
         if (wsRef.current?.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({
@@ -198,7 +198,7 @@ export function useRealTimeTranscription(): UseRealTimeTranscriptionReturn {
       mediaRecorder.onstop = () => {
         setIsRecording(false);
         console.log('Recording stopped');
-        
+
         // Stop transcription stream
         if (wsRef.current?.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({
@@ -208,7 +208,7 @@ export function useRealTimeTranscription(): UseRealTimeTranscriptionReturn {
       };
 
       mediaRecorderRef.current = mediaRecorder;
-      
+
       // Start recording with small time slices for real-time streaming
       mediaRecorder.start(1000); // Collect data every 1 second
 
@@ -239,7 +239,7 @@ export function useRealTimeTranscription(): UseRealTimeTranscriptionReturn {
         // Convert blob to base64
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
-        
+
         reader.onloadend = () => {
           const base64Audio = reader.result?.toString().split(',')[1];
           if (base64Audio) {
@@ -271,7 +271,7 @@ export function useRealTimeTranscription(): UseRealTimeTranscriptionReturn {
   // Auto-connect on mount
   useEffect(() => {
     connect();
-    
+
     return () => {
       disconnect();
     };

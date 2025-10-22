@@ -9,7 +9,7 @@ I've implemented a **real-time WebSocket-based transcription system** that provi
 ## ✅ What's New
 
 ### **Real-Time WebSocket Server**
-- **Independent WebSocket Server**: Runs on port 8080
+- **Independent WebSocket Server**: Runs on port 8081
 - **Live Audio Streaming**: Audio chunks sent in real-time (every 1 second)
 - **Immediate Transcription**: Results appear as you speak
 - **Speaker Detection**: Real-time Doctor/Patient identification
@@ -62,7 +62,7 @@ Open: **http://localhost:3000/page-realtime**
 ```
 Browser (Frontend)
     ↓ WebSocket
-WebSocket Server (Port 8080)
+WebSocket Server (Port 8081)
     ↓ Streaming Audio
 Google Cloud Speech-to-Text
     ↓ Real-time Results
@@ -81,9 +81,9 @@ Browser (Live Updates)
 ## 🔧 Technical Details
 
 ### **WebSocket Server (`websocket-server.js`)**
-- **Port**: 8080
-- **Protocol**: ws://localhost:8080
-- **Features**: 
+- **Port**: 8081
+- **Protocol**: ws://localhost:8081
+- **Features**:
   - Real-time audio streaming
   - Speaker diarization
   - Connection management
@@ -174,12 +174,12 @@ Navigate to: `http://localhost:3000/page-realtime`
 # Check if WebSocket server is running
 npm run ws:server
 
-# Should see: "WebSocket server ready on ws://localhost:8080"
+# Should see: "WebSocket server ready on ws://localhost:8081"
 ```
 
 #### "Connection failed"
-1. **Check port availability**: Ensure port 8080 is free
-2. **Firewall**: Allow connections on port 8080
+1. **Check port availability**: Ensure port 8081 is free
+2. **Firewall**: Allow connections on port 8081
 3. **Browser**: Use Chrome/Edge (better WebSocket support)
 
 ### **Audio Issues**
@@ -226,7 +226,7 @@ encoding: 'WEBM_OPUS', // Change format if needed
 Edit `websocket-server.js` to modify:
 ```javascript
 // Server port
-this.wss = new WebSocket.Server({ port: 8080 }); // Change port
+this.wss = new WebSocket.Server({ port: 8081 }); // Change port
 
 // Ping interval (keep-alive)
 const pingInterval = setInterval(() => {...}, 30000); // 30 seconds
@@ -286,14 +286,14 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY websocket-server.js ./
-EXPOSE 8080
+EXPOSE 8081
 CMD ["node", "websocket-server.js"]
 ```
 
 ### **Environment Variables**
 ```env
 # Production WebSocket URL
-NEXT_PUBLIC_WS_URL=wss://your-domain.com:8080
+NEXT_PUBLIC_WS_URL=wss://your-domain.com:8081
 
 # Google Cloud (same as before)
 GOOGLE_CLOUD_PROJECT_ID=your-project
@@ -343,7 +343,7 @@ Patient: About three days ago.
 ### **Getting Help**
 1. **Check this guide** for setup instructions
 2. **Verify dependencies** are installed correctly
-3. **Check WebSocket server** is running on port 8080
+3. **Check WebSocket server** is running on port 8081
 4. **Test microphone** permissions in browser
 5. **Review console logs** for error messages
 
@@ -366,7 +366,7 @@ npm run test:setup
 
 ## ✅ Ready to Use!
 
-Your real-time transcription system is now ready! 
+Your real-time transcription system is now ready!
 
 1. ✅ **WebSocket server** for live streaming
 2. ✅ **Real-time audio capture** and streaming

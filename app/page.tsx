@@ -7,17 +7,18 @@ import { TranscriptionDisplayWithBubbles } from './components/TranscriptionDispl
 import { MedicalAnalysis } from './components/MedicalAnalysis';
 import { ManualDialogueInput } from './components/ManualDialogueInput';
 import { ConversationJsonUpload } from './components/ConversationJsonUpload';
-import { 
-  TranscriptionSegment, 
+import {
+  TranscriptionSegment,
   MedicalAnalysis as MedicalAnalysisType,
   AnalysisType,
   MedicineSearchResult,
   StructuredMedicineData,
 } from './types';
-import { Download, Trash2, AlertCircle, Save } from 'lucide-react';
+import { Download, Trash2, AlertCircle, Save, FileText } from 'lucide-react';
 import { db } from './lib/firebase'; // Firebase import
 import { collection, addDoc, Timestamp } from 'firebase/firestore'; // Firebase Firestore imports
 import { auth } from './lib/firebase'; // If using authentication
+import Link from 'next/link';
 
 export default function PrescriptionAssistant() {
   const {
@@ -149,7 +150,7 @@ export default function PrescriptionAssistant() {
     const blob = new Blob([JSON.stringify(exportData, null, 2)], {
       type: 'application/json',
     });
-    
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -221,7 +222,7 @@ export default function PrescriptionAssistant() {
                 AI-powered medical conversation transcription with Soniox's superior real-time speaker diarization
               </p>
             </div>
-            
+
             <div className="text-right">
               <div className="flex items-center gap-2 text-green-600 mb-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -248,11 +249,9 @@ export default function PrescriptionAssistant() {
         )}
 
         {/* Action Buttons */}
-        <div className="mb-6 flex gap-3">
-          <ConversationJsonUpload
-            onLoadConversation={handleLoadJsonConversation}
-          />
-          
+        <div className="mb-6 flex gap-3 flex-wrap">
+          <ConversationJsonUpload onLoadConversation={handleLoadJsonConversation} />
+
           <button
             onClick={handleExport}
             disabled={segments.length === 0 && uploadedSegments.length === 0}
@@ -261,16 +260,20 @@ export default function PrescriptionAssistant() {
             <Download className="w-4 h-4" />
             Export Data
           </button>
-          
+
           <button
             onClick={handleClearAll}
-            disabled={segments.length === 0 && analyses.size === 0 && uploadedSegments.length === 0}
+            disabled={
+              segments.length === 0 &&
+              analyses.size === 0 &&
+              uploadedSegments.length === 0
+            }
             className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Trash2 className="w-4 h-4" />
             Clear All
           </button>
-          
+
           <button
             onClick={handleSaveToFirebase}
             disabled={analyses.size === 0}
@@ -279,6 +282,16 @@ export default function PrescriptionAssistant() {
             <Save className="w-4 h-4" />
             Save to Firebase
           </button>
+
+          {/* Generate Prescription Button - Opens in new tab */}
+          <Link
+            href="/prescription/new"
+            target="_blank"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+          >
+            <FileText className="w-4 h-4" />
+            Generate Prescription
+          </Link>
         </div>
 
         {/* Recording Controls */}
